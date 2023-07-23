@@ -10,6 +10,13 @@ import webbrowser
 from tkinter import*
 from PIL import ImageTk,Image#To display an image requires the use of Image and ImageTk imported from the Python Pillow (aka PIL) package.
 import time
+import sounddevice
+from scipy.io.wavfile import write
+import numpy as np
+import cv2
+from cv2 import VideoWriter
+from cv2 import VideoWriter_fourcc
+from google_trans_new import google_translator
 import winsound#The winsound module provides access to the basic sound-playing machinery provided by Windows platforms
 #name_file = open("Alexa", "r")
 #name_assistant = name_file.read()
@@ -49,6 +56,7 @@ def takeinput():
         try:
             with sr.Microphone() as source:
                 print("listening...")  # used for indication that our assistant is listening
+                listener.adjust_for_ambient_noise(source,duration=1)
                 voice = listener.listen(source) 
                  # using microphone as source and then calling speech recognizer to listen to this source and thus we can use functions which speech recognizer uses to convert voice to  text
                 command = listener.recognize_google(voice) 
@@ -72,7 +80,7 @@ class Widget:
         root=Tk()
         root.title('Alexa')
         root.geometry('520x320')
-        img=ImageTk.PhotoImage(Image.open('alexa.png'))#The PhotoImage class is used to display grayscale or true color icons, as well as images in labels.
+        img=ImageTk.PhotoImage(Image.open('assisstant.png'))#The PhotoImage class is used to display grayscale or true color icons, as well as images in labels.
         #The BitmapImage class is used to display only monochrome (two-color) images in labels.
         panel=Label(root,image=img)# A Label is a Tkinter Widget class, which is used to display text or an image. The label is a widget that the user just views but not interact with.
         panel.pack(side='right',fill='both',expand='yes')#The pack() geometry manager organizes widgets in blocks before placing them in the parent widget
@@ -163,6 +171,44 @@ class Widget:
             url = "https://mail.google.com/mail/u/0/#inbox"
             webbrowser.get().open(url)
             talk("here you can check your gmail")
+        elif "record" in command:
+            fps=44100
+            duration=10
+            print('Recording')
+            rec=sounddevice.rec(int(duration*fps),samplerate=fps,channels=2)
+            sounddevice.wait()
+            print('Done')
+            write('recording.wav',fps,rec)
+        elif "capture" in command:
+            webcam=cv2.VideoCapture(0)
+            video=VideoWriter('webcam.avi',VideoWriter_fourcc(*'MP42'),25.0,(640,480))
+            while True:
+                #stream_ok checks webcam is working or not
+                stream_ok,frame=webcam.read()
+                if stream_ok:
+                    cv2.imshow('webcam',frame)
+                    video.write(frame)
+                if cv2.waitKey(1) &0xFF ==27:
+                    break
+            cv2.destroyAllWindows()
+            webcam.release()
+            video.release
+        elif "translate" in command:
+            with sr.Microphone() as source:
+                print('Speak')
+                voic = listener.listen(source)
+                voice= listener.recognize_google(voic,language='en') 
+                #result=listener.recognize_google(voic,language='en')
+                engine.say('Please tell the language you want to translate to')
+                voi = listener.listen(source) 
+                voice1=listener.recognize_google(voi) 
+                translator=google_translator()
+                text=translator.translate(str(voice1),lang_tgt=str(voice))
+                engine.say(str(text))
+                engine.runAndWait
+
+
+
 
         else:
             talk('Sorry! Could you please repeat')
@@ -185,8 +231,8 @@ class Widget:
 
 
 
-if __name__== '__main__':
-    widget = Widget()
+#if __name__== '__main__':
+widget = Widget()
 time.sleep(1)
 while True:
     command = widget.runfun()
